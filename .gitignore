@@ -1,3 +1,5 @@
+endstone_server/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -8,6 +10,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+test.py
 build/
 develop-eggs/
 dist/

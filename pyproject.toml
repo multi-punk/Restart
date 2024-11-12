@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "endstone-restart-plugin"
+version = "0.1.0"
+description = "Плагин для перезапуска сервера раз в какое-то время"
+dependencies = ["ujson"]
+
+[project.entry-points."endstone"]
+restart-plugin = "endstone_restart_plugin:Restart"
