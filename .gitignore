@@ -4,7 +4,7 @@ endstone_server/
 __pycache__/
 *.py[cod]
 *$py.class
-
+.cfg
 # C extensions
 *.so
 
