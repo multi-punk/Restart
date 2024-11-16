@@ -85,8 +85,8 @@ class Restart(Plugin):
             player.send_toast(title="Рестарт", content=message)
         if seconds == 60:
             self.server.broadcast_message(message="Начинается голосование за скип рестарта! Воспользуйтесь командой '/restart yes' чтобы проголосовать за рестарт, и '/restart no' чтобы скипнуть его")
-            self.VOTE["start"] = 1
-            self.VOTE["data"] = {"yes": [],"no": []}
+            VOTE["start"] = 1
+            VOTE["data"] = {"yes": [],"no": []}
 
     def start_shutdown(self):
         yes_count = []
@@ -112,6 +112,7 @@ class Restart(Plugin):
         else:
             self.server.broadcast_message(message="Голосование закончено, скип рестарта.")
             self.check_night_time_and_start_timer()
+            VOTE["start"] = 0
             
             
     def shutdown_server(self):
