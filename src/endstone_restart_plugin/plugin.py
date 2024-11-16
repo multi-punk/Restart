@@ -1,8 +1,9 @@
 from threading import Timer
 from endstone.command import CommandExecutor
 from endstone.plugin import Plugin
-from endstone_restart_plugin.utils import GetConfiguration, SetConfiguration
+from endstone_restart_plugin.utils import GetConfiguration
 from endstone_restart_plugin.commands.command_restart import CommadRestart
+from endstone_restart_plugin.utils.vote import VOTE
 from datetime import datetime, time, timedelta
 
 class Restart(Plugin):
@@ -84,28 +85,32 @@ class Restart(Plugin):
             player.send_toast(title="Рестарт", content=message)
         if seconds == 60:
             self.server.broadcast_message(message="Начинается голосование за скип рестарта! Воспользуйтесь командой '/restart yes' чтобы проголосовать за рестарт, и '/restart no' чтобы скипнуть его")
-            self.restart_data["vote"]["start"] = 1
-            self.restart_data["vote"]["data"] = {"yes": [],"no": []}
-            SetConfiguration("conf", self.restart_data)
+            self.VOTE["start"] = 1
+            self.VOTE["data"] = {"yes": [],"no": []}
 
     def start_shutdown(self):
-        restart_data = GetConfiguration("conf")
-        yes_count = len(restart_data["vote"]["data"]["yes"])
-        no_count = len(restart_data["vote"]["data"]["no"])
+        yes_count = []
+        no_count = []
+        for player in self.server.online_players:
+            if player.xuid in VOTE["data"]["yes"]:
+                yes_count.append(player.xuid)
+            elif player.xuid in VOTE["data"]["no"]:
+                no_count.append(player.xuid)
+            else:
+                yes_count.append(player.xuid)
+                
+        yes_len = len(yes_count)
+        no_len = len(no_count)
         
-        if yes_count > no_count or (yes_count == 0 and no_count == 0):
-            self.server.broadcast_message(message="Голосование закончено, вы сейчас все плавно будете кикнуты ;)")
+        if yes_len > no_len:
+            self.server.broadcast_message(message="Голосование закончено, вы сейчас все плавно будете кикнуты.")
             for i in range(self.restart_data["restart_message_count"]):
                 delay = i * self.restart_data["message_delay"] 
                 Timer(delay, self.server.broadcast_message, args=(self.restart_data["restart_message_text"],)).start()
 
             Timer(self.restart_data["restart_message_count"] * self.restart_data["message_delay"], self.shutdown_server).start()
         else:
-            self.server.broadcast_message(message="Голосование закончено, скип рестарта :(")
-            restart_data = GetConfiguration("conf")
-            restart_data["vote"]["start"] = 0
-            restart_data["vote"]["data"] = {"yes": [],"no": []}
-            SetConfiguration("conf", restart_data)
+            self.server.broadcast_message(message="Голосование закончено, скип рестарта.")
             self.check_night_time_and_start_timer()
             
             

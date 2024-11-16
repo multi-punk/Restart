@@ -14,7 +14,7 @@ this file should have this fields
     "restart_message_count": 10, //Number of messages
     "message_delay": 0.5, //Delay between messages in seconds
     "restart_message_text": "Restart!", //restart notification text
-    "night_satrt": "23:00", //start time of the night
+    "night_start": "23:00", //start time of the night
     "night_end": "08:00", //end of the night
     "vote": {
         "start": 1,
