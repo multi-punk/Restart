@@ -15,13 +15,6 @@ this file should have this fields
     "message_delay": 0.5, //Delay between messages in seconds
     "restart_message_text": "Restart!", //restart notification text
     "night_start": "23:00", //start time of the night
-    "night_end": "08:00", //end of the night
-    "vote": {
-        "start": 1,
-        "data": {
-            "yes": [],
-            "no": []
-        }
-    }
+    "night_end": "08:00" //end of the night
 }
 ```
