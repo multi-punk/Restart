@@ -1,1 +1,1 @@
-VOTE = {"start": 1,"data": {"yes": [],"no": []}}
+VOTE = {"start": 0,"data": {"yes": [],"no": []}}
