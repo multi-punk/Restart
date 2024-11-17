@@ -7,7 +7,7 @@ from endstone_restart_plugin.utils.vote import VOTE
 class CommadRestart(CommandExecutor):
     def __init__(self, plugin: Plugin):
         self.plugin = plugin
-        self.restart_data = VOTE
+        self.restart_data = GetConfiguration("conf")
         super().__init__()
 
     def on_command(self, sender: CommandSender, command: Command, args: list[str]) -> bool:
@@ -27,20 +27,22 @@ class CommadRestart(CommandExecutor):
         return True
 
     def vote(self, sender: Player, vote_type: str):
-        if int(self.restart_data["start"]) == 1:
+        if int(VOTE["start"]) == 1:
             
             no_vote_type = ""
             if vote_type == "no":
                 no_vote_type = "yes"  
             else:
                 no_vote_type = "no"  
-            try:self.restart_data["data"][no_vote_type].remove(sender.xuid)
-            except:pass
+            try:
+                VOTE["data"][no_vote_type].remove(sender.xuid)
+            except:
+                pass
             
-            if sender.xuid in self.restart_data["data"][vote_type]:
+            if sender.xuid in VOTE["data"][vote_type]:
                 return
             
-            self.restart_data["data"][vote_type].append(sender.xuid)
+            VOTE["data"][vote_type].append(sender.xuid)
             sender.send_message(f"Вы проголосовали за {vote_type}.")
             print(VOTE)
 
