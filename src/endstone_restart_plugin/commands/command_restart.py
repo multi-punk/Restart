@@ -62,4 +62,4 @@ class CommadRestart(CommandExecutor):
         self.plugin.logger.info("Shutting down the server...")
         for player in self.plugin.server.online_players:
             player.kick(message="рестарт")
-        self.server.shutdown()
+        self.plugin.server.shutdown()
