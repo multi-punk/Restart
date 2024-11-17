@@ -3,6 +3,7 @@ from threading import Timer
 from endstone.plugin import Plugin
 from endstone.command import CommandExecutor, Command, CommandSender
 from endstone_restart_plugin.utils.vote import VOTE
+from endstone_restart_plugin.utils import GetConfiguration
 
 class CommadRestart(CommandExecutor):
     def __init__(self, plugin: Plugin):
