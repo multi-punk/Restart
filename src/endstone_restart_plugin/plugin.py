@@ -102,7 +102,7 @@ class Restart(Plugin):
         yes_len = len(yes_count)
         no_len = len(no_count)
         
-        if yes_len > no_len:
+        if yes_len >= no_len:
             self.server.broadcast_message(message="Голосование закончено, вы сейчас все плавно будете кикнуты.")
             for i in range(self.restart_data["restart_message_count"]):
                 delay = i * self.restart_data["message_delay"] 
