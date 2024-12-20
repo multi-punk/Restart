@@ -15,6 +15,7 @@ class Restart(Plugin):
     restart_message_text = restart_data["restart_message_text"]
     night_start = restart_data["night_start"]
     night_end = restart_data["night_end"]
+    shutdown_timer = None
 
     def on_load(self) -> None:
         self.logger.info("on_load is called!")
@@ -66,14 +67,14 @@ class Restart(Plugin):
             self.logger.info(f"Shutdown is disabled between {self.night_start} and {self.night_end}. Skipping.")
             delay = (night_end_datetime - current_time).total_seconds()
             self.logger.info(f"{delay} seconds until the end of the night.")
-            Timer(delay, self.start_shutdown_timer).start()
+            self.shutdown_timer = Timer(delay, self.start_shutdown_timer).start()
         else:
             self.start_shutdown_timer()
 
     def start_shutdown_timer(self):
         self.logger.info(f"Starting shutdown timer for {self.shutdown_interval} seconds.")
         
-        Timer(self.shutdown_interval, self.start_shutdown).start()
+        self.shutdown_timer = Timer(self.shutdown_interval, self.start_shutdown).start()
         
         notification_times = [600, 300, 60]  # 10 минут, 5 минут, 1 минута
         for seconds in notification_times:
@@ -117,6 +118,4 @@ class Restart(Plugin):
             
     def shutdown_server(self):
         self.logger.info("Shutting down the server...")
-        for player in self.server.online_players:
-            player.kick(message="рестарт")
         self.server.shutdown()
