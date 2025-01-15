@@ -28,7 +28,7 @@ class Restart(Plugin):
             executor=CommadRestart(self)
         )
         self.server.scheduler.run_task(self, check_tasks,  0, 20)
-        tasks.append(Task(0, self.check_night_time_and_start_timer))
+        # tasks.append(Task(0, self.check_night_time_and_start_timer))
     
     commands = {
         "restart": {
@@ -41,7 +41,7 @@ class Restart(Plugin):
     permissions = { 
         "plugin.command.restart": {
             "description": f"Только операторы могут использовать команду /restart.",
-            "default": "op",
+            "default": True,
         }
     }
         
@@ -60,7 +60,6 @@ class Restart(Plugin):
         is_night_time = (night_start_time < night_end_time and night_start_time <= current_time.time() < night_end_time) or (night_start_time > night_end_time and (current_time.time() >= night_start_time or current_time.time() < night_end_time))
 
         if is_night_time:
-            self.logger.info(f"Shutdown is disabled between {self.night_start} and {self.night_end}. Skipping.")
             tasks.append(Task(0, self.check_night_time_and_start_timer))
         else:
             self.shutdown_timer()
@@ -90,20 +89,20 @@ class Restart(Plugin):
             self.first_was = True
             self.send_notification(10)
         else:
-            tasks.append(Task(60, self.shutdown_timer))
+            tasks.append(Task(0, self.shutdown_timer))
 
 
     def send_vote_notification(self):
         self.server.broadcast_message(message="Начинается голосование за скип рестарта! Воспользуйтесь командой '/restart yes' чтобы проголосовать за рестарт, и '/restart no' чтобы скипнуть его")
         VOTE["start"] = 1
         VOTE["data"] = {"yes": [],"no": []}
-        tasks.append(Task(60, self.shutdown_timer))
+        tasks.append(Task(0, self.shutdown_timer))
 
     def send_notification(self, minutes):
         message = f"Сервер будет перезапущен менее чем через {minutes} минут(ы)!"
         for player in self.server.online_players:
             player.send_toast(title="Рестарт", content=message)
-        tasks.append(Task(60, self.shutdown_timer))
+        tasks.append(Task(0, self.shutdown_timer))
 
     def start_shutdown(self):
         yes_count = []
@@ -128,7 +127,12 @@ class Restart(Plugin):
             tasks.append(Task(self.restart_message_count * self.message_delay, self.shutdown_server))
         else:
             self.server.broadcast_message(message="Голосование закончено, скип рестарта.")
-            tasks.append(Task(0, self.check_night_time_and_start_timer))
+            self.first_was = False
+            self.second_was = False
+            self.third_was = False
+            self.forth_was = False
+            self.last_restart = datetime.now()
+            self.check_night_time_and_start_timer()
             VOTE["start"] = 0
             
             
