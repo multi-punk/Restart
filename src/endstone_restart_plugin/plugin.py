@@ -1,35 +1,15 @@
-from endstone.command import CommandExecutor
+# restart.py
 from endstone.plugin import Plugin
-from endstone_restart_plugin.utils import GetConfiguration
-from endstone_restart_plugin.commands.command_restart import CommadRestart
-from endstone_restart_plugin.utils.vote import VOTE
+from endstone.command import CommandExecutor
 from datetime import datetime, timedelta
-from endstone_restart_plugin.utils.task import *
+from endstone_restart_plugin.commands.command_restart import CommadRestart
+from endstone_restart_plugin.utils.task import Task, tasks, check_tasks
+from endstone_restart_plugin.utils.vote import VOTE
+from endstone_restart_plugin.utils.base import RestartBase
 
-class Restart(Plugin):
-    api_version = "0.5" 
-    restart_data = GetConfiguration("conf")
-    shutdown_interval = restart_data["shutdown_interval"]
-    restart_message_count = restart_data["restart_message_count"]  
-    message_delay = restart_data["message_delay"]  
-    restart_message_text = restart_data["restart_message_text"]
-    night_start = restart_data["night_start"]
-    night_end = restart_data["night_end"]
-    last_restart = datetime.now()
+class Restart(Plugin, RestartBase):
+    api_version = "0.5"
 
-    def on_load(self) -> None:
-        self.logger.info("on_load is called!")
-
-    def on_enable(self) -> None:
-        self.logger.info("on_enable is called!")
-        self.check_night_time_and_start_timer()
-        self.register_command(
-            command_name="restart",
-            executor=CommadRestart(self)
-        )
-        self.server.scheduler.run_task(self, check_tasks,  0, 20)
-        # tasks.append(Task(0, self.check_night_time_and_start_timer))
-    
     commands = {
         "restart": {
             "description": "Запуск рестарта.",
@@ -40,102 +20,55 @@ class Restart(Plugin):
 
     permissions = { 
         "plugin.command.restart": {
-            "description": f"Только операторы могут использовать команду /restart.",
+            "description": "Только операторы могут использовать команду /restart.",
             "default": True,
         }
     }
-        
+
+    def __init__(self):
+        Plugin.__init__(self)
+        RestartBase.__init__(self, self)
+
+    def on_enable(self) -> None:
+        Plugin.on_enable(self)
+        self.schedule_restart_check()
+        self.register_command("restart", CommadRestart(self))
+        self.server.scheduler.run_task(self, check_tasks, 0, 20)
+        tasks.append(Task(0, self.schedule_restart_check))
+
     def register_command(self, command_name: str, executor: CommandExecutor):
         command = self.get_command(command_name)
-        if command is not None:
+        if command:
             command.executor = executor
         else:
             self.logger.warning(f"Command '{command_name}' not found during registration.")
-        
-    def check_night_time_and_start_timer(self):
-        current_time = datetime.now()
-        night_start_time = datetime.strptime(self.night_start, "%H:%M").time()
-        night_end_time = datetime.strptime(self.night_end, "%H:%M").time()
 
-        is_night_time = (night_start_time < night_end_time and night_start_time <= current_time.time() < night_end_time) or (night_start_time > night_end_time and (current_time.time() >= night_start_time or current_time.time() < night_end_time))
+    def schedule_restart_check(self):
+        now = datetime.now().time()
+        night_start = datetime.strptime(self.night_start, "%H:%M").time()
+        night_end = datetime.strptime(self.night_end, "%H:%M").time()
 
-        if is_night_time:
-            tasks.append(Task(0, self.check_night_time_and_start_timer))
+        is_night = (
+            night_start < night_end and night_start <= now < night_end
+        ) or (
+            night_start > night_end and (now >= night_start or now < night_end)
+        )
+
+        if is_night:
+            tasks.append(Task(0, self.schedule_restart_check))
         else:
-            self.shutdown_timer()
-
-
-    first_was = False
-    second_was = False
-    third_was = False
-    forth_was = False
-    def shutdown_timer(self):
-        restart_time = self.last_restart + timedelta(seconds=self.shutdown_interval)
-        now = datetime.now()
-        one_minute = restart_time - timedelta(minutes=1)
-        five_minutes = restart_time - timedelta(minutes=5)
-        ten_minutes = restart_time - timedelta(minutes=10)
-
-        if restart_time < now and not self.forth_was:
-            self.forth_was = True
-            self.start_shutdown()
-        elif one_minute < now and not self.third_was:
-            self.third_was = True
-            self.send_vote_notification()
-        elif five_minutes < now and not self.second_was:
-            self.second_was = True
-            self.send_notification(5)
-        elif ten_minutes < now and not self.first_was:
-            self.first_was = True
-            self.send_notification(10)
-        else:
-            tasks.append(Task(0, self.shutdown_timer))
-
-
-    def send_vote_notification(self):
-        self.server.broadcast_message(message="Начинается голосование за скип рестарта! Воспользуйтесь командой '/restart yes' чтобы проголосовать за рестарт, и '/restart no' чтобы скипнуть его")
-        VOTE["start"] = 1
-        VOTE["data"] = {"yes": [],"no": []}
-        tasks.append(Task(0, self.shutdown_timer))
-
-    def send_notification(self, minutes):
-        message = f"Сервер будет перезапущен менее чем через {minutes} минут(ы)!"
-        for player in self.server.online_players:
-            player.send_toast(title="Рестарт", content=message)
-        tasks.append(Task(0, self.shutdown_timer))
+            self.run_shutdown_timer()
 
     def start_shutdown(self):
-        yes_count = []
-        no_count = []
-        for player in self.server.online_players:
-            if player.xuid in VOTE["data"]["yes"]:
-                yes_count.append(player.xuid)
-            elif player.xuid in VOTE["data"]["no"]:
-                no_count.append(player.xuid)
-            else:
-                yes_count.append(player.xuid)
-                
-        yes_len = len(yes_count)
-        no_len = len(no_count)
-        
-        if yes_len >= no_len:
-            self.server.broadcast_message(message="Голосование закончено, вы сейчас все плавно будете кикнуты.")
-            for i in range(self.restart_message_count):
-                delay = i * self.message_delay
-                tasks.append(Task(delay, self.server.broadcast_message, args=(self.restart_message_text,)))
+        no_votes = {p.xuid for p in self.server.online_players if p.xuid in VOTE["data"]["no"]}
+        yes_votes = {p.xuid for p in self.server.online_players if p.xuid in VOTE["data"]["yes"]}
+        undecided = {p.xuid for p in self.server.online_players} - yes_votes - no_votes
+        yes_votes.update(undecided)
 
-            tasks.append(Task(self.restart_message_count * self.message_delay, self.shutdown_server))
+        if len(yes_votes) >= len(no_votes):
+            super().start_shutdown()
         else:
-            self.server.broadcast_message(message="Голосование закончено, скип рестарта.")
-            self.first_was = False
-            self.second_was = False
-            self.third_was = False
-            self.forth_was = False
-            self.last_restart = datetime.now()
-            self.check_night_time_and_start_timer()
+            self.reset_restart_state()
+            self.schedule_restart_check()
+            self.server.broadcast_message(self.vote_delay)
             VOTE["start"] = 0
-            
-            
-    def shutdown_server(self):
-        self.logger.info("Shutting down the server...")
-        self.server.shutdown()
