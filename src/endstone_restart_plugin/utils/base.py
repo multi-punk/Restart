@@ -51,8 +51,9 @@ class RestartBase:
     def send_vote_notification(self):
         server = self.plugin.server
         server.broadcast_message(self.vote_notification)
-        for player in server.online_players and self.notify_sound != None:
-            player.play_sound(player.location, self.notify_sound, 1, 1)
+        if self.notify_sound != None:
+            for player in server.online_players:
+                player.play_sound(player.location, self.notify_sound, 1, 1)
         VOTE["start"] = 1
         VOTE["data"] = {"yes": [], "no": []}
         tasks.append(Task(0, self.run_shutdown_timer))
